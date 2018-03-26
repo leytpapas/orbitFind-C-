@@ -1,0 +1,385 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Geolocation</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD_vpdBPSRwvjLZwY5TSSKKYdlVOtPV81I"></script>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <style>
+
+        /* Always set the map height explicitly to define the size of the div
+         * element that contains the map. */
+        #map {
+            height: 100%;
+        }
+        /* Optional: Makes the sample page fill the window. */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .delete-menu {
+            position: absolute;
+            background: white;
+            padding: 3px;
+            color: #666;
+            font-weight: bold;
+            border: 1px solid #999;
+            font-family: sans-serif;
+            font-size: 12px;
+            box-shadow: 1px 3px 3px rgba(0, 0, 0, .3);
+            margin-top: -10px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+
+            .delete-menu:hover {
+                background: #eee;
+            }
+
+        #loader {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            z-index: 1;
+            width: 150px;
+            height: 150px;
+            margin: -75px 0 0 -75px;
+            border: 16px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 16px solid #3498db;
+            width: 120px;
+            height: 120px;
+            -webkit-animation: spin 2s linear infinite;
+            animation: spin 2s linear infinite;
+        }
+
+        #capture {
+            height: 360px;
+            width: 480px;
+            overflow: hidden;
+            float: left;
+            background-color: #ECECFB;
+            border: thin solid #333;
+            border-left: none;
+        }
+
+        @-webkit-keyframes spin {
+            0% {
+                -webkit-transform: rotate(0deg);
+            }
+
+            100% {
+                -webkit-transform: rotate(360deg);
+            }
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Add animation to "page content" */
+        .animate-bottom {
+            position: relative;
+            -webkit-animation-name: animatebottom;
+            -webkit-animation-duration: 1s;
+            animation-name: animatebottom;
+            animation-duration: 1s
+        }
+
+        @-webkit-keyframes animatebottom {
+            from {
+                bottom: -100px;
+                opacity: 0
+            }
+
+            to {
+                bottom: 0px;
+                opacity: 1
+            }
+        }
+
+        @keyframes animatebottom {
+            from {
+                bottom: -100px;
+                opacity: 0
+            }
+
+            to {
+                bottom: 0;
+                opacity: 1
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loader"></div>
+    <div id="map"></div>
+
+    <!--
+    <div id="capture"></div>
+        -->
+    <script>
+        // Note: This requires that you consent to location sharing when
+        // prompted by your browser. If you see the error "The Geolocation service
+        // failed.", it means you probably did not give permission for the browser to
+        // locate you.
+        var map;
+        var markers = [];
+        var polygon;
+        var kmlLayer
+        var infoWindow;
+        var lock = false;
+        var myVar;
+        var srcKml = "";
+
+
+        callbackObj.showMessage("Doing whatever i want");
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function loadIn() {
+            document.getElementById("map").style.opacity = "0.5";
+            document.getElementById("map").style.zIndex = -1;
+            document.getElementById("loader").style.display = "block";
+        }
+
+        function loadOut(delay) {
+            document.getElementById("loader").style.display = "none";
+            document.getElementById("map").style.zIndex = 0;
+            document.getElementById("map").style.opacity = "1";
+            if (delay) {
+                var sum = 0;
+                for (var i = 0; i < 200000000; i++) {
+                    for (var j = 0; j < 100; j++) {
+                        sum += i + j;
+                    }
+                }
+            }
+            return "YES";
+        }
+
+        function polygonPath() {
+            return polygon.getPath().getArray().toString();
+        }
+
+        function addKml(path) {
+            var src = "https://drive.google.com/uc?export=download&id=1Q13smIkOxJA-x163SGY1FeOdgmENx-X9/";
+            if (path != "") {
+                console.log(chrome.loadTimes().wasFetchedViaSpdy);
+                kmlLayer = new google.maps.KmlLayer(path, {
+                    suppressInfoWindows: true,
+                    preserveViewport: false,
+                    map: map
+                });
+                kmlLayer.addListener('click', function (event) {
+                    var content = event.featureData.infoWindowHtml;
+                    var testimonial = document.getElementById('capture');
+                    testimonial.innerHTML = content;
+                });
+            } else {
+                kmlLayer.addListener('click', function (event) {
+                    var content = event.featureData.infoWindowHtml;
+                    var testimonial = document.getElementById('capture');
+                    testimonial.innerHTML = content;
+                });
+            }
+        }
+
+        function initMap() {
+            loadIn();
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: 39.3666667, lng: 22.9458333 },
+                zoom: 6,
+                minZoom: 2,
+                maxZoom: 18,
+                streetViewControl: false,
+                fullscreenControl: false,
+                disableDoubleClickZoom: true,
+                clickableIcons: false,
+            });
+            infoWindow = new google.maps.InfoWindow({
+                pixelOffset: new google.maps.Size(300, 0),
+                map: map
+            });            
+
+            polygon = new google.maps.Polygon({
+                path: new google.maps.MVCArray(),
+                strokeColor: '#ff0000',
+                editable: true
+            });
+            polygon.setMap(map);
+            // Try HTML5 geolocation.
+            map.addListener('click', function (event) {
+                if (lock) {
+                    lock = false;
+                } else {
+                    polygon.getPath().push(new google.maps.LatLng(event.latLng.lat(), event.latLng.lng()));
+                    //polygonPoints.push(new google.maps.LatLng(event.latLng.lat(), event.latLng.lng()));
+                }
+            });
+
+            var deleteMenu = new DeleteMenu();
+
+            google.maps.event.addListener(polygon, 'rightclick', function (e) {
+                // Check if click was on a vertex control point
+                lock = true;
+                if (e.vertex == undefined) {
+                    return;
+                }
+                deleteMenu.open(map, polygon.getPath(), e.vertex);
+            });
+            // "https://dl.dropbox.com/s/hbmuyjkawvgimh9/swot.kml?dl=1"
+            // "https://dl.dropbox.com/s/d0jxl0wz0xx1pcg/swot-small.kml?dl=1"
+            // swot_small: "https://drive.google.com/uc?export=download&id=1Q13smIkOxJA-x163SGY1FeOdgmENx-X9
+            // swot: 
+
+            kmlLayer = new google.maps.KmlLayer({
+                url: "https://drive.google.com/uc?export=download&id=1Q13smIkOxJA-x163SGY1FeOdgmENx-X9",
+                suppressInfoWindows: true,
+                preserveViewport: false,
+                map: map
+            });
+            kmlLayer.addListener('click', function (event) {
+                var content = event.featureData.infoWindowHtml;
+                console.log(event.latLng);
+                infoWindow.setPosition(event.latLng);
+                infoWindow.setContent(content);
+                infoWindow.setMap(map);
+                //var testimonial = document.getElementById('capture');
+                //testimonial.innerHTML = content;
+            });
+            XNamespace ns = "http://earth.google.com/kml/2.2";
+            /*
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function (position) {
+                    var pos = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    infoWindow.setPosition(pos);
+                    infoWindow.setContent('Location found.');
+                    map.setCenter(pos);
+                }, function () {
+                    handleLocationError(true, infoWindow, map.getCenter());
+                });
+
+
+            } else {
+                // Browser doesn't support Geolocation
+                handleLocationError(false, infoWindow, map.getCenter());
+            }*/
+            loadOut();
+        }
+        function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+            infoWindow.setPosition(pos);
+            infoWindow.setContent(browserHasGeolocation ?
+                'Error: The Geolocation service failed.' :
+                'Error: Your browser doesn\'t support geolocation.');
+        }
+
+
+        function clearMarkers() {
+            polygonPath();
+            polygon.getPath().clear();
+        }
+        window.onload = initMap;
+
+        /**
+         * A menu that lets a user delete a selected vertex of a path.
+         * @constructor
+         */
+        function DeleteMenu() {
+            this.div_ = document.createElement('div');
+            this.div_.className = 'delete-menu';
+            this.div_.innerHTML = 'Delete';
+
+            var menu = this;
+            google.maps.event.addDomListener(this.div_, 'click', function () {
+                menu.removeVertex();
+            });
+
+        }
+
+        DeleteMenu.prototype = new google.maps.OverlayView();
+
+        DeleteMenu.prototype.onAdd = function () {
+            var deleteMenu = this;
+            var map = this.getMap();
+            this.getPanes().floatPane.appendChild(this.div_);
+
+            // mousedown anywhere on the map except on the menu div will close the
+            // menu.
+            this.divListener_ = google.maps.event.addDomListener(map.getDiv(), 'mousedown', function (e) {
+                if (e.target != deleteMenu.div_) {
+                    deleteMenu.close();
+                }
+            }, true);
+        };
+
+        DeleteMenu.prototype.onRemove = function () {
+            google.maps.event.removeListener(this.divListener_);
+            this.div_.parentNode.removeChild(this.div_);
+
+            // clean up
+            this.set('position');
+            this.set('path');
+            this.set('vertex');
+        };
+
+        DeleteMenu.prototype.close = function () {
+            this.setMap(null);
+        };
+
+        DeleteMenu.prototype.draw = function () {
+            var position = this.get('position');
+            var projection = this.getProjection();
+
+            if (!position || !projection) {
+                return;
+            }
+
+            var point = projection.fromLatLngToDivPixel(position);
+            this.div_.style.top = point.y + 'px';
+            this.div_.style.left = point.x + 'px';
+        };
+
+        /**
+         * Opens the menu at a vertex of a given path.
+         */
+        DeleteMenu.prototype.open = function (map, path, vertex) {
+            this.set('position', path.getAt(vertex));
+            this.set('path', path);
+            this.set('vertex', vertex);
+            this.setMap(map);
+            this.draw();
+        };
+
+        /**
+         * Deletes the vertex from the path.
+         */
+        DeleteMenu.prototype.removeVertex = function () {
+            var path = this.get('path');
+            var vertex = this.get('vertex');
+
+            if (!path || vertex == undefined) {
+                this.close();
+                return;
+            }
+
+            path.removeAt(vertex);
+            this.close();
+        };
+    </script>
+
+</body>
+</html>
