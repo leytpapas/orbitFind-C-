@@ -2,3 +2,5 @@
 
 
 ### Currently under developement
+
+Basic structure ready. Needs to be assembled

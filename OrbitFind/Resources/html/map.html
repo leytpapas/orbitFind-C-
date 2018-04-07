@@ -153,21 +153,19 @@
             document.getElementById("loader").style.display = "block";
         }
 
-        function loadOut(delay) {
+        function loadOut() {
             document.getElementById("loader").style.display = "none";
             document.getElementById("map").style.zIndex = 0;
             document.getElementById("map").style.opacity = "1";
-            if (delay) {
-                var sum = 0;
-                for (var i = 0; i < 200000000; i++) {
-                    for (var j = 0; j < 100; j++) {
-                        sum += i + j;
-                    }
-                }
-            }
-            return "YES";
-        }
 
+            return "success";
+        }
+        function clearKml() {
+            map.data.forEach(function (feature) {
+                map.data.remove(feature);
+            });
+            return "success";
+        }
         function polygonPath() {
             return polygon.getPath().getArray().toString();
         }
@@ -201,7 +199,7 @@
                 center: { lat: 39.3666667, lng: 22.9458333 },
                 zoom: 6,
                 minZoom: 2,
-                maxZoom: 18,
+                maxZoom: 25,
                 streetViewControl: false,
                 fullscreenControl: false,
                 disableDoubleClickZoom: true,
@@ -242,7 +240,7 @@
             // "https://dl.dropbox.com/s/d0jxl0wz0xx1pcg/swot-small.kml?dl=1"
             // swot_small: "https://drive.google.com/uc?export=download&id=1Q13smIkOxJA-x163SGY1FeOdgmENx-X9
             // swot: 
-
+            /*
             kmlLayer = new google.maps.KmlLayer({
                 url: "https://drive.google.com/uc?export=download&id=1Q13smIkOxJA-x163SGY1FeOdgmENx-X9",
                 suppressInfoWindows: true,
@@ -256,9 +254,10 @@
                 infoWindow.setContent(content);
                 infoWindow.setMap(map);
                 //var testimonial = document.getElementById('capture');
-                //testimonial.innerHTML = content;
-            });
-            XNamespace ns = "http://earth.google.com/kml/2.2";
+                //test
+                imonial.innerHTML = content;
+            });*/
+            
             /*
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(function (position) {
@@ -287,6 +286,19 @@
                 'Error: Your browser doesn\'t support geolocation.');
         }
 
+        function loadGeoJson(geojson) {
+            map.data.addGeoJson(geojson);
+            // Add some style.
+            map.data.addListener('click', function (event) {
+                console.log(event.latLng.lat() +"~~"+ event.latLng.lng());
+            });
+            map.data.setStyle(function (feature) {
+                return /** @type {google.maps.Data.StyleOptions} */({
+                    fillColor: feature.getProperty('color'),
+                    strokeWeight: 4
+                });
+            });
+        }
 
         function clearMarkers() {
             polygonPath();

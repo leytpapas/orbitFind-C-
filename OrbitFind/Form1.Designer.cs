@@ -30,8 +30,6 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.panel1 = new System.Windows.Forms.Panel();
-            this.addressUrl_t = new System.Windows.Forms.TextBox();
-            this.loadAddr_b = new System.Windows.Forms.Button();
             this.kmlAddr_t = new System.Windows.Forms.TextBox();
             this.panel_map = new System.Windows.Forms.Panel();
             this.loadKml_b = new System.Windows.Forms.Button();
@@ -71,7 +69,7 @@
             this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.viewSourceToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.workerThread = new System.ComponentModel.BackgroundWorker();
-            this.paths_b = new System.Windows.Forms.Button();
+            this.clearKml_b = new System.Windows.Forms.Button();
             this.panel1.SuspendLayout();
             this.menuBar.SuspendLayout();
             this.SuspendLayout();
@@ -79,9 +77,7 @@
             // panel1
             // 
             this.panel1.AutoScroll = true;
-            this.panel1.Controls.Add(this.paths_b);
-            this.panel1.Controls.Add(this.addressUrl_t);
-            this.panel1.Controls.Add(this.loadAddr_b);
+            this.panel1.Controls.Add(this.clearKml_b);
             this.panel1.Controls.Add(this.kmlAddr_t);
             this.panel1.Controls.Add(this.panel_map);
             this.panel1.Controls.Add(this.loadKml_b);
@@ -95,35 +91,6 @@
             this.panel1.Size = new System.Drawing.Size(1022, 550);
             this.panel1.TabIndex = 1;
             // 
-            // addressUrl_t
-            // 
-            this.addressUrl_t.AcceptsReturn = true;
-            this.addressUrl_t.AcceptsTab = true;
-            this.addressUrl_t.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.addressUrl_t.Location = new System.Drawing.Point(499, 27);
-            this.addressUrl_t.Name = "addressUrl_t";
-            this.addressUrl_t.Size = new System.Drawing.Size(341, 20);
-            this.addressUrl_t.TabIndex = 9;
-            this.addressUrl_t.Text = "file:///";
-            this.addressUrl_t.KeyDown += new System.Windows.Forms.KeyEventHandler(this.addressUrl_t_KeyDown);
-            // 
-            // loadAddr_b
-            // 
-            this.loadAddr_b.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.loadAddr_b.AutoSize = true;
-            this.loadAddr_b.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.loadAddr_b.Location = new System.Drawing.Point(411, 27);
-            this.loadAddr_b.Name = "loadAddr_b";
-            this.loadAddr_b.Size = new System.Drawing.Size(82, 23);
-            this.loadAddr_b.TabIndex = 8;
-            this.loadAddr_b.Text = "Load Address";
-            this.loadAddr_b.UseVisualStyleBackColor = true;
-            this.loadAddr_b.Click += new System.EventHandler(this.loadAddr_b_Click);
-            // 
             // kmlAddr_t
             // 
             this.kmlAddr_t.AccessibleRole = System.Windows.Forms.AccessibleRole.Text;
@@ -134,7 +101,7 @@
             this.kmlAddr_t.Name = "kmlAddr_t";
             this.kmlAddr_t.Size = new System.Drawing.Size(154, 20);
             this.kmlAddr_t.TabIndex = 7;
-            this.kmlAddr_t.Text = "file:///";
+            this.kmlAddr_t.Text = "Resources/kml/swot_small.kml";
             this.kmlAddr_t.KeyDown += new System.Windows.Forms.KeyEventHandler(this.kmlAddr_t_KeyDown);
             // 
             // panel_map
@@ -458,20 +425,20 @@
             this.viewSourceToolStripMenuItem.Text = "View Source";
             this.viewSourceToolStripMenuItem.Click += new System.EventHandler(this.viewSource_Click);
             // 
-            // paths_b
+            // clearKml_b
             // 
-            this.paths_b.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.clearKml_b.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.paths_b.AutoSize = true;
-            this.paths_b.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.paths_b.Location = new System.Drawing.Point(846, 27);
-            this.paths_b.Name = "paths_b";
-            this.paths_b.Size = new System.Drawing.Size(61, 23);
-            this.paths_b.TabIndex = 11;
-            this.paths_b.Text = "get paths";
-            this.paths_b.UseVisualStyleBackColor = true;
-            this.paths_b.Click += new System.EventHandler(this.paths_b_Click);
+            this.clearKml_b.AutoSize = true;
+            this.clearKml_b.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.clearKml_b.Location = new System.Drawing.Point(411, 25);
+            this.clearKml_b.Name = "clearKml_b";
+            this.clearKml_b.Size = new System.Drawing.Size(60, 23);
+            this.clearKml_b.TabIndex = 11;
+            this.clearKml_b.Text = "Clear kml";
+            this.clearKml_b.UseVisualStyleBackColor = true;
+            this.clearKml_b.Click += new System.EventHandler(this.clearKml_b_Click);
             // 
             // Form1
             // 
@@ -480,9 +447,10 @@
             this.AutoScroll = true;
             this.ClientSize = new System.Drawing.Size(1022, 550);
             this.Controls.Add(this.panel1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuBar;
             this.Name = "Form1";
-            this.Text = "Form1";
+            this.Text = "Orbit Find v1.0";
             this.Load += new System.EventHandler(this.Form1_Load_1);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
@@ -500,8 +468,6 @@
         private System.Windows.Forms.Button loadKml_b;
         private System.Windows.Forms.Panel panel_map;
         private System.Windows.Forms.TextBox kmlAddr_t;
-        private System.Windows.Forms.TextBox addressUrl_t;
-        private System.Windows.Forms.Button loadAddr_b;
         private System.ComponentModel.BackgroundWorker workerThread;
         private System.Windows.Forms.MenuStrip menuBar;
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
@@ -535,7 +501,7 @@
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem settingsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem viewSourceToolStripMenuItem;
-        private System.Windows.Forms.Button paths_b;
+        private System.Windows.Forms.Button clearKml_b;
     }
 }
 

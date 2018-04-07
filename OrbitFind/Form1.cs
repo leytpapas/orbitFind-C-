@@ -8,10 +8,16 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
+using System.Xml;
+using System.Xml.Linq;
 using cef;
 using CefSharp;
 using CefSharp.WinForms;
 using CefSharp.WinForms.Internals;
+using System.Text.RegularExpressions;
+using OrbitFind;
+using Newtonsoft.Json;
+
 
 namespace OrbitFind
 {
@@ -58,7 +64,7 @@ namespace OrbitFind
                 Console.WriteLine("Done");
             }
 
-            var task2 = browser.EvaluateScriptAsync("(function(){return loadOut(1);})();");
+            var task2 = browser.EvaluateScriptAsync("(function(){return loadOut();})();");
             task2.ContinueWith(t =>
             {
                 if (!t.IsFaulted)
@@ -67,11 +73,14 @@ namespace OrbitFind
                     Console.WriteLine("&loadOut&: " + (response.Success ? (response.Result ?? "null") : response.Message));
                     Console.WriteLine(response.Result);
                     Console.WriteLine(response.Message);
+                    clear_b.Enabled = true;
+                    compute_b.Enabled = true;
+                    loadKml_b.Enabled = true;
+                    kmlAddr_t.Enabled = true;
+                    cancel_b.Enabled = false;
                 }
-            }, TaskScheduler.FromCurrentSynchronizationContext()).Wait(1000);
-            clear_b.Enabled = true;
-            compute_b.Enabled = true;
-            cancel_b.Enabled = false;
+            }, TaskScheduler.FromCurrentSynchronizationContext()).Wait(1);
+            
         }
 
         private void workerThread_ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -112,7 +121,7 @@ namespace OrbitFind
                     var response = t.Result;
                     var temp = (response.Success ? (response.Result ?? "null") : response.Message);
                     Console.WriteLine("&&" + temp);
-                    var test = new Polygon(temp.ToString());
+                    var test = new Polygon(temp.ToString(),"Polygon");
                 }
             }, TaskScheduler.FromCurrentSynchronizationContext());
             
@@ -123,7 +132,7 @@ namespace OrbitFind
             CefSettings settings = new CefSettings();
             Cef.Initialize(settings);
             CefSharpSettings.LegacyJavascriptBindingEnabled = true;
-            browser = new ChromiumWebBrowser("file:///"+"HTMLResources/html/map.html")
+            browser = new ChromiumWebBrowser("file:///"+"Resources/html/map.html")
             {
                 Dock = DockStyle.Fill,
                 
@@ -139,7 +148,10 @@ namespace OrbitFind
         {
             clear_b.Enabled = false;
             compute_b.Enabled = false;
+            loadKml_b.Enabled = false;
+            kmlAddr_t.Enabled = false;
             cancel_b.Enabled = true;
+
             var task = browser.EvaluateScriptAsync("loadIn();");
             task.ContinueWith(t =>
             {
@@ -149,7 +161,7 @@ namespace OrbitFind
                     Console.WriteLine("&loadInt&: "+( response.Success ? (response.Result ?? "null") : response.Message));
                 }
             }, TaskScheduler.FromCurrentSynchronizationContext());
-            workerThread.RunWorkerAsync(new List<int>(new int[] { 100, 500}));
+            workerThread.RunWorkerAsync(new List<int>(new int[] { 20, 500}));
             /*var task2 = browser.EvaluateScriptAsync("loadOut();");
             task2.ContinueWith(t =>
             {
@@ -165,39 +177,84 @@ namespace OrbitFind
         }
 
         private void kmlAddr_t_KeyDown(object sender, KeyEventArgs e) {
-            if (e.KeyCode == Keys.Enter) {
+            if (e.KeyCode == Keys.Enter & compute_b.Enabled) {
                 loadKml_b_Click(sender, new EventArgs());
                 e.Handled = true;
                 e.SuppressKeyPress = true;
             }
 
         }
+
         private void loadKml_b_Click(object sender, EventArgs e)
         {
-            browser.Load(kmlAddr_t.Text);
+            string geojson = parseKML(this, kmlAddr_t.Text);
+            if (geojson=="") {
+                return;
+            }
+            var task = browser.EvaluateScriptAsync("loadGeoJson("+geojson+");");
+            task.ContinueWith(t =>
+            {
+                if (!t.IsFaulted)
+                {
+                    var response = t.Result;
+                    Console.WriteLine("&loadInt&: " + (response.Success ? (response.Result ?? "null") : response.Message));
+                }
+            }, TaskScheduler.FromCurrentSynchronizationContext()).Wait(1);
+            //browser.Load(kmlAddr_t.Text);
             Console.WriteLine("Loading " + kmlAddr_t.Text);
+        }
+        
+        private string parseKML(object sender, string filepath) {
+            try
+            {
+                var xDoc = XDocument.Load(filepath);
+                XElement root = xDoc.Root;
+                Console.WriteLine(root.Name.Namespace);
+                XNamespace ns = root.Name.Namespace;
+                //var temp = root.Descendants(ns + "Placemark");
+                var geojson = new GeoJson();
+                var pass = 0;
+                var polytest = new List<Tuple<double, double>>();
+                root = root.Element(ns+"Document").Element(ns + "Folder");
+                Console.WriteLine(root.Element(ns+"name").Value);
+                foreach (XElement f in root.Elements(ns + "Folder")){
+                    pass += 1;
+
+                    foreach (XElement p in f.Elements(ns + "Placemark")) {
+                        if (p.Element(ns + "styleUrl").Value.EndsWith("GroundTrack"))
+                        {
+                            Polygon polyline = new Polygon(p.Element(ns + "LineString").Element(ns + "coordinates").Value, "Linestring");
+                            geojson.addPoly(polyline);
+                        }
+                        else {
+                            //swath
+                            var temp = "";
+                            foreach (XElement m in p.Element(ns+"MultiGeometry").Elements(ns+"LineString")) {
+                                if (temp == ""){
+                                    //left
+                                    temp = m.Element(ns + "coordinates").Value;
+                                }else {
+                                    //right
+                                    Polygon polyline = new Polygon(temp, m.Element(ns + "coordinates").Value, "swath");
+                                }
+                            }
+                        }
+                    };
+                }
+                
+                return geojson.toString();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+            return "";
+
         }
 
         private void viewSource_Click(object sender, EventArgs e)
         {
             browser.ShowDevTools();
-        }
-
-        private void addressUrl_t_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Enter)
-            {
-                loadAddr_b_Click(sender, new EventArgs());
-
-                e.Handled = true;
-                e.SuppressKeyPress = true;
-            }
-        }
-
-        private void loadAddr_b_Click(object sender, EventArgs e)
-        {
-            browser.Load(addressUrl_t.Text);
-            Console.WriteLine("Loading " + addressUrl_t.Text);
         }
 
         private void cancel_b_Click(object sender, EventArgs e)
@@ -207,8 +264,23 @@ namespace OrbitFind
                 workerThread.CancelAsync();
                 clear_b.Enabled = true;
                 compute_b.Enabled = true;
+                loadKml_b.Enabled = true;
+                kmlAddr_t.Enabled = true;
                 cancel_b.Enabled = false;
             }
+        }
+
+        private void clearKml_b_Click(object sender, EventArgs e)
+        {
+            var task = browser.EvaluateScriptAsync("clearKml();");
+            task.ContinueWith(t =>
+            {
+                if (!t.IsFaulted)
+                {
+                    var response = t.Result;
+                    Console.WriteLine("clearKml(): " + (response.Success ? (response.Result ?? "null") : response.Message));
+                }
+            }, TaskScheduler.FromCurrentSynchronizationContext()).Wait(1);
         }
     }
     public class CallbackObjectForJs
